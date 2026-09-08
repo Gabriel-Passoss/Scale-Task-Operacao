@@ -23,6 +23,7 @@ import { CREATIVE_STEPS, FIRST_STEP } from "@/lib/creativeSteps";
 interface Props {
   remessas: Remessa[];
   formatos: Formato[];
+  onAddFormato: (name: string) => Promise<Formato | null>;
   avatares: Avatar[];
   onAddAvatar: (name: string) => Promise<Avatar | null>;
   copyMethods: CopyMethod[];
@@ -31,7 +32,7 @@ interface Props {
   onCreated: () => void;
 }
 
-export function CreateDocumentDialog({ remessas, formatos, avatares, onAddAvatar, copyMethods, onAddCopyMethod, members, onCreated }: Props) {
+export function CreateDocumentDialog({ remessas, formatos, onAddFormato, avatares, onAddAvatar, copyMethods, onAddCopyMethod, members, onCreated }: Props) {
   const { currentProject } = useProjectContext();
   const [open, setOpen] = useState(false);
   const [remessaId, setRemessaId] = useState("");
@@ -242,6 +243,7 @@ export function CreateDocumentDialog({ remessas, formatos, avatares, onAddAvatar
                 onChange={(d) => updateAd(i, d)}
                 onRemove={ads.length > 1 ? () => setAds((prev) => prev.filter((_, idx) => idx !== i)) : undefined}
                 formatos={formatos}
+                onAddFormato={onAddFormato}
                 avatares={avatares}
                 onAddAvatar={onAddAvatar}
                 copyMethods={copyMethods}

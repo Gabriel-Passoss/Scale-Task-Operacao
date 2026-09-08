@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Formato } from "@/hooks/useFormatos";
+import { FormatoSelect } from "./FormatoSelect";
 import { Avatar } from "@/hooks/useAvatares";
 import { AvatarSelect } from "./AvatarSelect";
 import { CopyMethod } from "@/hooks/useCopyMethods";
@@ -82,6 +83,7 @@ interface AdFormProps {
   onChange: (data: AdData) => void;
   onRemove?: () => void;
   formatos: Formato[];
+  onAddFormato: (name: string) => Promise<Formato | null>;
   avatares: Avatar[];
   onAddAvatar: (name: string) => Promise<Avatar | null>;
   copyMethods: CopyMethod[];
@@ -109,7 +111,7 @@ const METRICS: [string, keyof AdData][] = [
   ["Faturamento Backend (R$)", "faturamento_backend"],
 ];
 
-export function AdForm({ data, onChange, onRemove, formatos, avatares, onAddAvatar, copyMethods, onAddCopyMethod, members, index, metricsAuto }: AdFormProps) {
+export function AdForm({ data, onChange, onRemove, formatos, onAddFormato, avatares, onAddAvatar, copyMethods, onAddCopyMethod, members, index, metricsAuto }: AdFormProps) {
   const set = <K extends keyof AdData>(key: K, value: AdData[K]) =>
     onChange({ ...data, [key]: value });
 
@@ -174,18 +176,8 @@ export function AdForm({ data, onChange, onRemove, formatos, avatares, onAddAvat
           </Select>
         </div>
 
-        {/* Formato */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Formato</Label>
-          <Select value={data.formato_id} onValueChange={(v) => set("formato_id", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-            <SelectContent>
-              {formatos.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Formato — lista gerenciável */}
+        <FormatoSelect items={formatos} value={data.formato_id} onChange={(v) => set("formato_id", v)} onAdd={onAddFormato} />
 
         {/* Avatar (persona) — lista gerenciável */}
         <AvatarSelect items={avatares} value={data.avatar_id} onChange={(v) => set("avatar_id", v)} onAdd={onAddAvatar} />

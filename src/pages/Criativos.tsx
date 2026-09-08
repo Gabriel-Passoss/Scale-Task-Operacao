@@ -43,6 +43,7 @@ interface DocWithAds {
   remessa_id: string | null;
   remessa_name?: string;
   link?: string;
+  phase_assignments?: Record<string, string> | null;
   created_at: string;
   ads: any[];
 }
@@ -55,6 +56,11 @@ const Criativos = () => {
   const { copyMethods, add: addCopyMethod, remove: removeCopyMethod } = useCopyMethods();
   const { members } = useProjectMembers();
 
+  // add() do useFormatos devolve undefined quando não há projeto selecionado.
+  const handleAddFormato = async (name: string) => {
+    const res = await addFormato(name);
+    return res?.data ?? null;
+  };
   const handleAddAvatar = async (name: string) => {
     const { data } = await addAvatar(name);
     return data ?? null;
@@ -90,6 +96,7 @@ const Criativos = () => {
     setDocuments(
       docs.map((doc) => ({
         ...doc,
+        phase_assignments: (doc.phase_assignments as Record<string, string> | null) ?? null,
         remessa_name: doc.remessa_id ? remessaMap[doc.remessa_id] : undefined,
         ads: (ads ?? []).filter((a) => a.document_id === doc.id),
       }))
@@ -213,6 +220,7 @@ const Criativos = () => {
             <CreateDocumentDialog
               remessas={remessas}
               formatos={formatos}
+              onAddFormato={handleAddFormato}
               avatares={avatares}
               onAddAvatar={handleAddAvatar}
               copyMethods={copyMethods}
@@ -331,6 +339,7 @@ const Criativos = () => {
           document={editDoc}
           remessas={remessas}
           formatos={formatos}
+          onAddFormato={handleAddFormato}
           avatares={avatares}
           onAddAvatar={handleAddAvatar}
           copyMethods={copyMethods}
