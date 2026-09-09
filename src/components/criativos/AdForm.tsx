@@ -12,6 +12,7 @@ import { AvatarSelect } from "./AvatarSelect";
 import { CopyMethod } from "@/hooks/useCopyMethods";
 import { CopyMethodSelect } from "./CopyMethodSelect";
 import { ProjectMember } from "@/hooks/useProjectMembers";
+import { copywriterMembers } from "@/lib/roles";
 
 const STATUS_OPTIONS = [
   { value: "enviado_gravacao", label: "Enviado para gravação" },
@@ -167,7 +168,7 @@ export function AdForm({ data, onChange, onRemove, formatos, onAddFormato, avata
           <Select value={data.copywriter_id} onValueChange={(v) => set("copywriter_id", v)}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              {members.map((m) => (
+              {copywriterMembers(members, [data.copywriter_id]).map((m) => (
                 <SelectItem key={m.user_id} value={m.user_id}>
                   {m.full_name || m.email || m.user_id.slice(0, 8)}
                 </SelectItem>

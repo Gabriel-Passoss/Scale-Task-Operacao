@@ -82,6 +82,7 @@ const roles = [
   { role: "Especialista", tag: "Acesso total", icon: Sparkles, full: true },
   { role: "Copywriter research", tag: "Limitado + criar swipe", icon: FileText, full: false },
   { role: "Editor", tag: "Limitado", icon: Palette, full: false },
+  { role: "Tráfego", tag: "Limitado + Métricas", icon: TrendingUp, full: false },
 ];
 
 const themes = [
@@ -93,7 +94,7 @@ const themes = [
 const stats = [
   { value: "10", label: "Módulos integrados" },
   { value: "7", label: "Etapas de criativo automáticas" },
-  { value: "5", label: "Níveis de acesso" },
+  { value: "6", label: "Níveis de acesso" },
   { value: "3", label: "Temas visuais" },
 ];
 

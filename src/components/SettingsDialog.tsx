@@ -292,6 +292,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       case "copywriter_jr": return "Copywriter research";
       case "especialista": return "Especialista";
       case "editor": return "Editor";
+      case "trafego": return "Tráfego";
       case "gestor": return "Gestor"; // legado (fora do seletor)
       default: return role;
     }
@@ -304,6 +305,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       case "copywriter_jr": return "bg-purple-500/15 text-purple-700 dark:text-purple-400";
       case "especialista": return "bg-cyan-500/15 text-cyan-700 dark:text-cyan-400";
       case "editor": return "bg-green-500/15 text-green-700 dark:text-green-400";
+      case "trafego": return "bg-rose-500/15 text-rose-700 dark:text-rose-400";
       case "gestor": return "bg-orange-500/15 text-orange-700 dark:text-orange-400";
       default: return "bg-muted text-muted-foreground";
     }
@@ -520,6 +522,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         <SelectItem value="especialista">Especialista</SelectItem>
                         <SelectItem value="copywriter_jr">Copywriter research</SelectItem>
                         <SelectItem value="editor">Editor</SelectItem>
+                        <SelectItem value="trafego">Tráfego</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button

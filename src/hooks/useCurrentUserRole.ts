@@ -27,15 +27,16 @@ export function useCurrentUserRole() {
 
   // Role model v2 (enum slots reused):
   //   Dono=owner, Copywriter chief=master, Especialista=especialista → FULL access.
-  //   Copywriter research=copywriter_jr, Editor=editor → limited.
+  //   Copywriter research=copywriter_jr, Editor=editor, Tráfego=trafego → limited.
   const isFullAccess = role === "owner" || role === "master" || role === "especialista";
   const isResearch = role === "copywriter_jr"; // "Copywriter research"
   const isEditor = role === "editor";
-  const isLimited = isResearch || isEditor;
+  const isTrafego = role === "trafego";
+  const isLimited = isResearch || isEditor || isTrafego;
 
-  // Métricas: full access only. Editor & research have no access.
-  const canViewMetrics = isFullAccess;
-  const canEditMetrics = isFullAccess;
+  // Métricas: full access + Tráfego. Editor & research have no access.
+  const canViewMetrics = isFullAccess || isTrafego;
+  const canEditMetrics = isFullAccess || isTrafego;
 
   // Criativos create/edit/delete: full access only (limited roles are view-only).
   const canEdit = isFullAccess;
@@ -58,7 +59,8 @@ export function useCurrentUserRole() {
   // Can access a specific tab
   const canAccessTab = (tab: string): boolean => {
     if (isFullAccess) return true;
-    // Editor & Copywriter research: everything except Métricas.
+    // Editor, Copywriter research & Tráfego: everything except Métricas
+    // (Tráfego também vê Métricas — liberado por canViewMetrics/canEditMetrics).
     if (isLimited) {
       return ["dashboard", "tasks", "criativos", "chat", "swipe", "arquivos", "educacional"].includes(tab);
     }
@@ -78,6 +80,7 @@ export function useCurrentUserRole() {
     isFullAccess,
     isResearch,
     isEditor,
+    isTrafego,
     isEspecialista,
     isGestor,
     canAccessTab,

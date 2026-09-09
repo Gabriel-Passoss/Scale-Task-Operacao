@@ -15,6 +15,7 @@ import type { Formato } from "@/hooks/useFormatos";
 import type { Avatar } from "@/hooks/useAvatares";
 import type { CopyMethod } from "@/hooks/useCopyMethods";
 import type { ProjectMember } from "@/hooks/useProjectMembers";
+import { copywriterMembers } from "@/lib/roles";
 
 // Todos os status possíveis do anúncio (espelha AdForm).
 const STATUS_OPTIONS: { id: string; name: string }[] = [
@@ -123,7 +124,9 @@ export function FilterPopover({ remessas, members, formatos, avatares, copyMetho
       return { ...prev, [key]: arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id] };
     });
 
-  const memberItems: Item[] = members.map((m) => ({ id: m.user_id, name: m.full_name || m.email || m.user_id.slice(0, 8) }));
+  // Só cargos de copywriter — mais quem já estiver selecionado, para não sumir com um filtro ativo.
+  const memberItems: Item[] = copywriterMembers(members, local.copywriterIds)
+    .map((m) => ({ id: m.user_id, name: m.full_name || m.email || m.user_id.slice(0, 8) }));
   const toItems = (arr: { id: string; name: string }[]): Item[] => arr.map((x) => ({ id: x.id, name: x.name }));
 
   const activeCount =

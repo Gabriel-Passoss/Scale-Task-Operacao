@@ -1810,6 +1810,7 @@ export type Database = {
         | "especialista"
         | "editor"
         | "gestor"
+        | "trafego"
       task_status: "pendente" | "em_progresso" | "concluida" | "arquivada"
     }
     CompositeTypes: {
@@ -1953,6 +1954,7 @@ export const Constants = {
         "especialista",
         "editor",
         "gestor",
+        "trafego",
       ],
       task_status: ["pendente", "em_progresso", "concluida", "arquivada"],
     },
