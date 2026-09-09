@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { findUserIdByEmail, type EmailLookupClient } from "@/lib/findUserByEmail";
 import { PushNotificationsCard } from "@/components/PushNotificationsCard";
 import { TestNotificationCard } from "@/components/TestNotificationCard";
 import { ProfilePanel } from "@/components/ProfilePanel";
@@ -151,17 +152,20 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("get-user-by-email", {
-        body: { email },
-      });
+      const lookup = await findUserIdByEmail(supabase as unknown as EmailLookupClient, email);
 
-      if (error || !data?.user_id) {
+      if (lookup.status === "error") {
+        toast.error(`Erro ao buscar usuário: ${lookup.message}`);
+        setSubmitting(false);
+        return;
+      }
+      if (lookup.status === "not_found") {
         toast.error("Usuário não encontrado com esse email");
         setSubmitting(false);
         return;
       }
 
-      const userId = data.user_id;
+      const userId = lookup.userId;
 
       const existing = ownedProjects
         .find((p) => p.id === projectId)
@@ -181,8 +185,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       toast.success("Membro adicionado!");
       setAddingEmail((prev) => ({ ...prev, [projectId]: "" }));
       fetchData();
-    } catch {
-      toast.error("Erro ao adicionar membro");
+    } catch (err) {
+      // Mostra o motivo real (ex.: RLS barrando quem não é dono do projeto).
+      const detail = err instanceof Error ? err.message : String(err);
+      toast.error(`Erro ao adicionar membro: ${detail}`);
     } finally {
       setSubmitting(false);
     }
