@@ -39,11 +39,22 @@ export function useFormatos() {
     return { data, error };
   };
 
+  const update = async (id: string, name: string) => {
+    const { data, error } = await supabase
+      .from("formatos")
+      .update({ name })
+      .eq("id", id)
+      .select()
+      .single();
+    if (!error && data) setFormatos((prev) => prev.map((f) => (f.id === id ? data : f)));
+    return { data, error };
+  };
+
   const remove = async (id: string) => {
     const { error } = await supabase.from("formatos").delete().eq("id", id);
     if (!error) setFormatos((prev) => prev.filter((f) => f.id !== id));
     return { error };
   };
 
-  return { formatos, loading, add, remove, refetch: fetch };
+  return { formatos, loading, add, update, remove, refetch: fetch };
 }

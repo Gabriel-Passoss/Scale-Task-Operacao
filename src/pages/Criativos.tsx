@@ -51,7 +51,7 @@ interface DocWithAds {
 const Criativos = () => {
   const { currentProject } = useProjectContext();
   const { remessas, add: addRemessa, remove: removeRemessa } = useRemessas();
-  const { formatos, add: addFormato, remove: removeFormato } = useFormatos();
+  const { formatos, add: addFormato, update: updateFormato, remove: removeFormato } = useFormatos();
   const { avatares, add: addAvatar, remove: removeAvatar } = useAvatares();
   const { copyMethods, add: addCopyMethod, remove: removeCopyMethod } = useCopyMethods();
   const { members } = useProjectMembers();
@@ -198,6 +198,7 @@ const Criativos = () => {
                 triggerLabel="Gerenciar Formatos"
                 items={formatos}
                 onAdd={addFormato}
+                onRename={updateFormato}
                 onRemove={removeFormato}
               />
               <ManageDialog
