@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, Crown, Users, Loader2, Trash2, ImagePlus, X as XIcon, Bot, AlertTriangle, User, Webhook } from "lucide-react";
+import { UserPlus, Crown, Users, Loader2, Trash2, Pencil, ImagePlus, X as XIcon, Bot, AlertTriangle, User, Webhook } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +38,15 @@ import { TestNotificationCard } from "@/components/TestNotificationCard";
 import { ProfilePanel } from "@/components/ProfilePanel";
 import { WebhookPanel } from "@/components/WebhookPanel";
 import { ElevenLabsKeyCard } from "@/components/ElevenLabsKeyCard";
+
+/** Cargos que o dono pode atribuir. "owner" e "gestor" (legado) ficam de fora. */
+const ASSIGNABLE_ROLES = [
+  { value: "master", label: "Copywriter chief" },
+  { value: "especialista", label: "Especialista" },
+  { value: "copywriter_jr", label: "Copywriter research" },
+  { value: "editor", label: "Editor" },
+  { value: "trafego", label: "Tráfego" },
+];
 
 interface SettingsDialogProps {
   open: boolean;
@@ -71,6 +80,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [editingName, setEditingName] = useState<Record<string, string>>({});
   const [editingToken, setEditingToken] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  // membershipId -> cargo pendente. A presença da chave é o "está editando".
+  const [editingMemberRole, setEditingMemberRole] = useState<Record<string, string>>({});
   const [uploadingImage, setUploadingImage] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -189,6 +200,39 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       // Mostra o motivo real (ex.: RLS barrando quem não é dono do projeto).
       const detail = err instanceof Error ? err.message : String(err);
       toast.error(`Erro ao adicionar membro: ${detail}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleEditRole = (membershipId: string, currentRole: string) =>
+    setEditingMemberRole((prev) => {
+      const next = { ...prev };
+      if (membershipId in next) delete next[membershipId];
+      else next[membershipId] = currentRole;
+      return next;
+    });
+
+  const handleChangeRole = async (membershipId: string, role: string) => {
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("user_projects")
+        .update({ role: role as any })
+        .eq("id", membershipId);
+      if (error) throw error;
+
+      toast.success("Cargo atualizado!");
+      setEditingMemberRole((prev) => {
+        const next = { ...prev };
+        delete next[membershipId];
+        return next;
+      });
+      fetchData();
+    } catch (err) {
+      // Mostra o motivo real (ex.: RLS barrando quem não é dono do projeto).
+      const detail = err instanceof Error ? err.message : String(err);
+      toast.error(`Erro ao alterar o cargo: ${detail}`);
     } finally {
       setSubmitting(false);
     }
@@ -313,26 +357,63 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const renderMembers = (members: MemberInfo[], isOwner: boolean, projectId: string) => (
     <div className="space-y-1.5">
-      {members.map((m) => (
-        <div key={m.id} className="flex items-center justify-between py-1.5 px-2 rounded-md bg-secondary/30">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs text-foreground truncate">{m.full_name}</span>
-            <Badge variant="secondary" className={`text-2xs border-0 shrink-0 ${roleBadgeColor(m.role)}`}>
-              {roleLabel(m.role)}
-            </Badge>
+      {members.map((m) => {
+        // O dono não mexe no próprio registro — a RLS também barra isso.
+        const canManage = isOwner && m.role !== "owner";
+        const editing = m.id in editingMemberRole;
+
+        return (
+          <div key={m.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-md bg-secondary/30">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs text-foreground truncate">{m.full_name}</span>
+              {editing ? (
+                <Select
+                  value={editingMemberRole[m.id]}
+                  onValueChange={(v) => handleChangeRole(m.id, v)}
+                  disabled={submitting}
+                >
+                  <SelectTrigger className="h-6 w-36 text-2xs shrink-0">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASSIGNABLE_ROLES.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="secondary" className={`text-2xs border-0 shrink-0 ${roleBadgeColor(m.role)}`}>
+                  {roleLabel(m.role)}
+                </Badge>
+              )}
+            </div>
+            {canManage && (
+              <div className="flex items-center gap-0.5 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  title={editing ? "Cancelar" : "Alterar cargo"}
+                  onClick={() => toggleEditRole(m.id, m.role)}
+                  disabled={submitting}
+                >
+                  {editing ? <XIcon className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  title="Remover do projeto"
+                  onClick={() => handleRemoveMember(m.id, projectId)}
+                  disabled={submitting}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
-          {isOwner && m.role !== "owner" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-              onClick={() => handleRemoveMember(m.id, projectId)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -518,11 +599,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="master">Copywriter chief</SelectItem>
-                        <SelectItem value="especialista">Especialista</SelectItem>
-                        <SelectItem value="copywriter_jr">Copywriter research</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
-                        <SelectItem value="trafego">Tráfego</SelectItem>
+                        {ASSIGNABLE_ROLES.map((r) => (
+                          <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Button
