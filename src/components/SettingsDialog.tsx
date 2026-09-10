@@ -39,8 +39,9 @@ import { ProfilePanel } from "@/components/ProfilePanel";
 import { WebhookPanel } from "@/components/WebhookPanel";
 import { ElevenLabsKeyCard } from "@/components/ElevenLabsKeyCard";
 
-/** Cargos que o dono pode atribuir. "owner" e "gestor" (legado) ficam de fora. */
+/** Cargos que um dono pode atribuir. "gestor" (legado) fica de fora. */
 const ASSIGNABLE_ROLES = [
+  { value: "owner", label: "Dono" },
   { value: "master", label: "Copywriter chief" },
   { value: "especialista", label: "Especialista" },
   { value: "copywriter_jr", label: "Copywriter research" },
@@ -80,8 +81,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [editingName, setEditingName] = useState<Record<string, string>>({});
   const [editingToken, setEditingToken] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   // membershipId -> cargo pendente. A presença da chave é o "está editando".
   const [editingMemberRole, setEditingMemberRole] = useState<Record<string, string>>({});
+  // Promover a Dono passa por confirmação: dono também exclui o projeto.
+  const [pendingOwner, setPendingOwner] = useState<{ id: string; name: string } | null>(null);
   const [uploadingImage, setUploadingImage] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -90,6 +94,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setCurrentUserId(user.id);
 
       const { data: userProjects } = await supabase
         .from("user_projects")
@@ -213,6 +218,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       return next;
     });
 
+  /** Escolha no select: promoção a Dono pede confirmação antes de gravar. */
+  const requestRoleChange = (membershipId: string, memberName: string, role: string) => {
+    if (role === "owner") {
+      setPendingOwner({ id: membershipId, name: memberName });
+      return;
+    }
+    handleChangeRole(membershipId, role);
+  };
+
   const handleChangeRole = async (membershipId: string, role: string) => {
     setSubmitting(true);
     try {
@@ -223,6 +237,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       if (error) throw error;
 
       toast.success("Cargo atualizado!");
+      setPendingOwner(null);
       setEditingMemberRole((prev) => {
         const next = { ...prev };
         delete next[membershipId];
@@ -358,8 +373,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const renderMembers = (members: MemberInfo[], isOwner: boolean, projectId: string) => (
     <div className="space-y-1.5">
       {members.map((m) => {
-        // O dono não mexe no próprio registro — a RLS também barra isso.
-        const canManage = isOwner && m.role !== "owner";
+        // Um dono mexe em qualquer membro menos nele mesmo — a RLS barra igual.
+        const canManage = isOwner && m.user_id !== currentUserId;
         const editing = m.id in editingMemberRole;
 
         return (
@@ -369,7 +384,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               {editing ? (
                 <Select
                   value={editingMemberRole[m.id]}
-                  onValueChange={(v) => handleChangeRole(m.id, v)}
+                  onValueChange={(v) => requestRoleChange(m.id, m.full_name, v)}
                   disabled={submitting}
                 >
                   <SelectTrigger className="h-6 w-36 text-2xs shrink-0">
@@ -678,6 +693,32 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </TabsContent>
           </Tabs>
         )}
+
+        <AlertDialog open={!!pendingOwner} onOpenChange={(o) => { if (!o) setPendingOwner(null); }}>
+          <AlertDialogContent className="glass">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Tornar <strong>{pendingOwner?.name}</strong> Dono?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm">
+                Dono é o nível máximo: além de acesso total ao conteúdo, quem é Dono
+                pode <strong>convidar e remover membros</strong>, <strong>alterar cargos</strong> —
+                inclusive rebaixar você — e <strong>excluir o projeto inteiro</strong>.
+                O projeto passa a ter mais de um Dono, todos com o mesmo poder.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => pendingOwner && handleChangeRole(pendingOwner.id, "owner")}
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Tornar Dono"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
